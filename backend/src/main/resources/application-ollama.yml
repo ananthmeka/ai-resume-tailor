@@ -1,0 +1,22 @@
+# Local LLM on laptop via Ollama (OpenAI-compatible API on port 11434)
+# Usage: ./mvnw spring-boot:run -Dspring-boot.run.profiles=ollama
+#
+# Prerequisites:
+#   brew install ollama   (or https://ollama.com)
+#   ollama pull qwen2.5:7b
+#   ollama serve
+
+spring:
+  config:
+    activate:
+      on-profile: ollama
+
+app:
+  cors-origins: ${APP_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  openai:
+    api-key: ${OPENAI_API_KEY:ollama}
+    base-url: ${OPENAI_BASE_URL:http://127.0.0.1:11434/v1}
+    model: ${OPENAI_MODEL:qwen2.5:7b}
+    require-api-key: false
+    json-response-format: false
+    timeout-seconds: 300

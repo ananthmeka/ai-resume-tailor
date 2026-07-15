@@ -1,0 +1,13 @@
+# Railway / production defaults (activate with SPRING_PROFILES_ACTIVE=railway,groq)
+spring:
+  config:
+    activate:
+      on-profile: railway
+
+app:
+  cors-origins: ${APP_CORS_ORIGINS:https://*.vercel.app}
+  security:
+    api-key-enabled: true
+    api-key: ${APP_API_KEY:}
+    rate-limit-per-minute: ${APP_RATE_LIMIT_PER_MINUTE:30}
+    tailor-rate-limit-per-hour: ${APP_TAILOR_LIMIT_PER_HOUR:10}

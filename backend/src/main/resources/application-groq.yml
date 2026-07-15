@@ -1,0 +1,17 @@
+# Groq — free/fast cloud inference (OpenAI-compatible)
+# https://console.groq.com/keys
+
+spring:
+  config:
+    activate:
+      on-profile: groq
+
+app:
+  cors-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
+  openai:
+    api-key: ${GROQ_API_KEY:${OPENAI_API_KEY:}}
+    base-url: ${OPENAI_BASE_URL:https://api.groq.com/openai/v1}
+    model: ${OPENAI_MODEL:llama-3.3-70b-versatile}
+    require-api-key: true
+    json-response-format: true
+    timeout-seconds: 120

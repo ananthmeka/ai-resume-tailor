@@ -1,0 +1,23 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+app:
+  cors-origins: "http://localhost:5173,http://127.0.0.1:5173"
+  security:
+    api-key-enabled: ${APP_API_KEY_ENABLED:false}
+    api-key: ${APP_API_KEY:}
+    rate-limit-per-minute: ${APP_RATE_LIMIT_PER_MINUTE:30}
+    tailor-rate-limit-per-hour: ${APP_TAILOR_LIMIT_PER_HOUR:10}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    require-api-key: true
+    json-response-format: true
+    timeout-seconds: 120
