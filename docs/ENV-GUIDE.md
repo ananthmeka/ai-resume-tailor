@@ -25,7 +25,7 @@ The code uses an OpenAI-**compatible** HTTP API; Groq provides that endpoint wit
 | **`.env`** (project root) | Spring Boot | `GROQ_API_KEY`, `APP_API_KEY`, `SPRING_PROFILES_ACTIVE`, CORS |
 | **`frontend/.env`** | Vite | `VITE_API_BASE_URL`, `VITE_API_KEY` |
 
-**GitHub:** commit only `.env.example` files — **never** real `.env` with secrets.
+**GitHub:** **never** commit `.env`, `frontend/.env`, or any file containing keys. Templates live in [ENV-TEMPLATE.md](ENV-TEMPLATE.md); policy in [SECRETS-POLICY.md](SECRETS-POLICY.md).
 
 **Railway:** paste root/backend variables in the Railway **Variables** UI.  
 **Vercel:** paste `VITE_*` in **Settings → Environment Variables**.
@@ -49,7 +49,7 @@ openssl rand -hex 32
 
 Paste the output into **both** places (same string).
 
-There is **no** `VITE_API_KEY` in the root `.env.example` on purpose — it belongs in **`frontend/.env`**.
+There is **no** `VITE_API_KEY` in the root `.env` on purpose — it belongs in **`frontend/.env`** (see [ENV-TEMPLATE.md](ENV-TEMPLATE.md)).
 
 ---
 

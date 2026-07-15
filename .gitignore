@@ -1,7 +1,11 @@
+# SECRETS — never commit or push (see docs/SECRETS-POLICY.md)
 .env
+.env.*
 frontend/.env
-.env.local
-frontend/.env.local
+frontend/.env.*
+.env.example
+frontend/.env.example
+
 node_modules/
 target/
 dist/

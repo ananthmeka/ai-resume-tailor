@@ -197,4 +197,4 @@ curl https://YOUR-API/api/health
 | `openrouter` | OpenRouter |
 | `together` | Together AI |
 
-See `backend/src/main/resources/application-*.yml` and `.env.example`.
+See `backend/src/main/resources/application-*.yml` and [ENV-TEMPLATE.md](ENV-TEMPLATE.md).

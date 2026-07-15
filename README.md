@@ -2,6 +2,8 @@
 
 One master resume + job description → job-specific, ATS-friendly resume (no invented facts).
 
+**Secrets:** Never commit `.env` files. Copy templates from [docs/ENV-TEMPLATE.md](docs/ENV-TEMPLATE.md). See [docs/SECRETS-POLICY.md](docs/SECRETS-POLICY.md).
+
 ## LLM backends
 
 | When | Doc |
