@@ -21,8 +21,9 @@ After changing root, **Redeploy** (old logs may still show Railpack).
 
 **Service** → **Deployments** → click failed deploy → **View logs**.
 
-| Log message | Fix |
+| Log says | Fix |
 |-------------|-----|
+| `Unable to find main class` + `COPY backend/src backend/src` | Root `Dockerfile` fixed: use `COPY backend/src ./src`. Push and redeploy. |
 | `Dockerfile not found` | Set Root Directory = `backend` |
 | `mvnw: not found` / wrapper error | Pull latest `backend/Dockerfile` (uses Maven image, no mvnw) |
 | `failed to solve` / network | Retry deploy; Railway transient issue |
