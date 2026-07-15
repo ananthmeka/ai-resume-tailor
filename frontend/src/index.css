@@ -126,7 +126,8 @@ button.secondary {
 
 .preview-frame {
   width: 100%;
-  min-height: 480px;
+  height: min(1200px, 85vh);
+  min-height: 640px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #fff;
@@ -159,6 +160,40 @@ button.secondary {
   margin-bottom: 8px;
 }
 
+.interview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.interview-list li {
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 0;
+}
+
+.interview-category {
+  display: inline-block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.interview-q {
+  font-weight: 600;
+  margin: 6px 0;
+}
+
+.interview-why {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 4px 0 0;
+}
+
 .muted {
   color: #64748b;
   font-size: 0.9rem;
@@ -167,7 +202,7 @@ button.secondary {
 .original-preview {
   white-space: pre-wrap;
   font-size: 0.85rem;
-  max-height: 200px;
+  max-height: 320px;
   overflow: auto;
   background: #f8fafc;
   padding: 12px;

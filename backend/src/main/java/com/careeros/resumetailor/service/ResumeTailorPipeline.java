@@ -1,5 +1,6 @@
 package com.careeros.resumetailor.service;
 
+import com.careeros.resumetailor.model.InterviewPrep;
 import com.careeros.resumetailor.model.OptimizationResult;
 import com.careeros.resumetailor.model.StructuredResume;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,8 +21,10 @@ public class ResumeTailorPipeline {
               "certifications": [ { "name", "issuer", "date" } ],
               "otherSections": [string]
             }
-            Rules: Copy facts exactly from the source. Do not invent employers, dates, skills, or degrees.
-            If a field is missing in the source, use null or empty arrays.
+            Rules:
+            - Copy facts exactly from the source. Do not invent employers, dates, skills, or degrees.
+            - Include EVERY employment entry and EVERY project from the source (oldest to newest in experience array).
+            - If a field is missing in the source, use null or empty arrays.
             """;
 
     private static final String OPTIMIZE_SYSTEM = """
@@ -37,13 +40,36 @@ public class ResumeTailorPipeline {
             }
             Mandatory rules:
             1. NEVER add skills, employers, projects, certifications, degrees, or metrics not supported by the base resume.
-            2. You MAY reorder sections, rewrite bullets for clarity, summarize older roles, and emphasize JD-aligned achievements.
-            3. Quantify achievements ONLY if numbers appear in the base resume or are clearly implied (do not invent percentages).
-            4. Maintain a coherent theme aligned with the job (e.g. cloud, leadership) using truthful content only.
-            5. ATS-friendly: plain text structure, no tables/icons; use strong action verbs.
-            6. Resume length hint: ONE_PAGE = ~1 page equivalent (summarize aggressively), TWO_PAGES = standard, EXECUTIVE = lead with executive summary + selective detail.
-            7. missingKeywords: JD terms the candidate lacks (do NOT suggest falsely adding them as experience).
-            8. matchScores: integers 0-100, estimates only.
+            2. optimizedResume MUST contain the same employers and date ranges as the base resume — same count of experience entries. You MAY rewrite bullets and reorder roles for JD fit; you MUST NOT drop roles.
+            3. optimizedResume MUST include contact (from base), professionalSummary (rewritten for JD), skillGroups, projects, education, and certifications from base (rewritten or reordered as needed).
+            4. Quantify achievements ONLY if numbers appear in the base resume (do not invent percentages).
+            5. ATS-friendly: plain text structure; strong action verbs.
+            6. Length hints: ONE_PAGE = shorter bullets/summary but still list every employer with at least one bullet; TWO_PAGES = standard detail; EXECUTIVE = strong executive summary plus selective depth on recent roles.
+            7. missingKeywords: JD terms the candidate lacks (do not add as fake experience).
+            8. matchScores: integers 0-100.
+            9. Every item in "changes" MUST reflect something actually present in optimizedResume.
+            """;
+
+    private static final String INTERVIEW_SYSTEM = """
+            You generate interview preparation questions for a candidate applying to a specific job.
+            Output ONLY valid JSON:
+            {
+              "questions": [
+                {
+                  "category": "behavioral|technical|leadership|domain|project",
+                  "question": string,
+                  "rationale": string,
+                  "groundedIn": string
+                }
+              ]
+            }
+            Rules:
+            - Produce 12 to 18 questions mixing categories.
+            - Ground every question in the job description AND specific facts from the candidate resume (employers, projects, technologies, leadership scope).
+            - groundedIn cites the resume anchor (e.g. "Cisco — platform migration" or project name).
+            - Do NOT assume skills or employers not on the resume.
+            - Include 3-5 project-deep-dive questions when projects exist.
+            - Include JD-specific technical/domain questions the candidate can answer from their stated experience.
             """;
 
     private final OpenAiChatService openAi;
@@ -76,9 +102,34 @@ public class ResumeTailorPipeline {
                     %s
                     """.formatted(lengthHint, truncate(jobDescription, 12000), truncate(baseJson, 28000));
             String json = openAi.chatJson(OPTIMIZE_SYSTEM, user);
-            return objectMapper.readValue(json, OptimizationResult.class);
+            OptimizationResult raw = objectMapper.readValue(json, OptimizationResult.class);
+            StructuredResume merged = ResumeCompletenessMerger.merge(base, raw.optimizedResume());
+            return new OptimizationResult(
+                    merged,
+                    raw.targetRoleSummary(),
+                    raw.changes(),
+                    raw.missingKeywords(),
+                    raw.recommendations(),
+                    raw.matchScores());
         } catch (Exception e) {
             throw new IllegalStateException("Failed to optimize resume: " + e.getMessage(), e);
+        }
+    }
+
+    public InterviewPrep generateInterviewQuestions(StructuredResume tailored, String jobDescription) {
+        try {
+            String resumeJson = objectMapper.writeValueAsString(tailored);
+            String user = """
+                    Job description:
+                    %s
+                    
+                    Candidate tailored resume (source of truth for their background):
+                    %s
+                    """.formatted(truncate(jobDescription, 12000), truncate(resumeJson, 28000));
+            String json = openAi.chatJson(INTERVIEW_SYSTEM, user);
+            return objectMapper.readValue(json, InterviewPrep.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate interview questions: " + e.getMessage(), e);
         }
     }
 

@@ -22,3 +22,4 @@ app:
     require-api-key: true
     json-response-format: true
     timeout-seconds: 120
+    max-completion-tokens: ${OPENAI_MAX_COMPLETION_TOKENS:16384}

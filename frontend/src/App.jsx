@@ -115,7 +115,7 @@ export default function App() {
 
         <div className="actions">
           <button type="button" disabled={loading} onClick={() => runTailor(false)}>
-            {loading ? 'Generating…' : 'Generate tailored resume'}
+            {loading ? 'Generating resume & interview prep…' : 'Generate tailored resume'}
           </button>
           <button
             type="button"
@@ -189,9 +189,29 @@ export default function App() {
             )}
           </section>
 
+          {result.interviewPrep?.questions?.length > 0 && (
+            <section className="card interview-prep">
+              <h3>Sample interview questions (JD + your background)</h3>
+              <p className="muted">
+                Grounded in this job description and your resume — use STAR stories from real roles and projects.
+              </p>
+              <ul className="interview-list">
+                {result.interviewPrep.questions.map((q, i) => (
+                  <li key={i}>
+                    <span className="interview-category">{q.category}</span>
+                    <p className="interview-q">{q.question}</p>
+                    {q.groundedIn && <p className="muted">Based on: {q.groundedIn}</p>}
+                    {q.rationale && <p className="interview-why">{q.rationale}</p>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <div className="grid">
             <section className="card">
-              <h3>Original text (extracted)</h3>
+              <h3>Original text (extract snippet)</h3>
+              <p className="muted">First ~8,000 characters of parsed file — full text is used for tailoring.</p>
               <div className="original-preview">{result.originalTextPreview}</div>
             </section>
             <section className="card">

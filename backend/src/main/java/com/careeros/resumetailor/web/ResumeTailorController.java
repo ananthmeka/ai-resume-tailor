@@ -1,5 +1,6 @@
 package com.careeros.resumetailor.web;
 
+import com.careeros.resumetailor.model.InterviewPrep;
 import com.careeros.resumetailor.model.TailorRequest;
 import com.careeros.resumetailor.model.TailorResponse;
 import com.careeros.resumetailor.service.PdfExportService;
@@ -48,9 +49,10 @@ public class ResumeTailorController {
         String text = parseService.extractText(resume);
         var structured = pipeline.extractStructured(text);
         var result = pipeline.optimize(structured, req.jobDescription(), req.resumeLengthOrDefault());
+        InterviewPrep interviewPrep = pipeline.generateInterviewQuestions(result.optimizedResume(), req.jobDescription());
         String html = htmlRenderer.render(result.optimizedResume());
-        String preview = text.length() > 2000 ? text.substring(0, 2000) + "…" : text;
-        return new TailorResponse(html, result, preview);
+        String preview = text.length() > 8000 ? text.substring(0, 8000) + "…" : text;
+        return new TailorResponse(html, result, preview, interviewPrep);
     }
 
     @PostMapping(value = "/tailor/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

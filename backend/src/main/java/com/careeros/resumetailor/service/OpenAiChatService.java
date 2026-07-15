@@ -23,6 +23,7 @@ public class OpenAiChatService {
     private final String model;
     private final boolean requireApiKey;
     private final boolean jsonResponseFormat;
+    private final int maxCompletionTokens;
 
     public OpenAiChatService(
             RestClient openAiRestClient,
@@ -30,13 +31,15 @@ public class OpenAiChatService {
             @Value("${app.openai.api-key}") String apiKey,
             @Value("${app.openai.model}") String model,
             @Value("${app.openai.require-api-key:true}") boolean requireApiKey,
-            @Value("${app.openai.json-response-format:true}") boolean jsonResponseFormat) {
+            @Value("${app.openai.json-response-format:true}") boolean jsonResponseFormat,
+            @Value("${app.openai.max-completion-tokens:16384}") int maxCompletionTokens) {
         this.restClient = openAiRestClient;
         this.objectMapper = objectMapper;
         this.apiKey = apiKey;
         this.model = model;
         this.requireApiKey = requireApiKey;
         this.jsonResponseFormat = jsonResponseFormat;
+        this.maxCompletionTokens = maxCompletionTokens;
     }
 
     public String chatJson(String systemPrompt, String userPrompt) {
@@ -53,6 +56,9 @@ public class OpenAiChatService {
         messages.add(Map.of("role", "system", "content", systemPrompt));
         messages.add(Map.of("role", "user", "content", userPrompt));
         body.put("messages", messages);
+        if (maxCompletionTokens > 0) {
+            body.put("max_completion_tokens", maxCompletionTokens);
+        }
 
         try {
             RestClient.RequestBodySpec spec = restClient.post()
