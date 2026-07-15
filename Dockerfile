@@ -1,8 +1,9 @@
-# Railway / Docker — uses Maven from image (no mvnw required on GitHub)
+# Fallback when Railway Root Directory is not set to backend/
+# Prefer: Service Settings → Source → Root Directory = backend
 FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /build
-COPY pom.xml .
-COPY src src
+COPY backend/pom.xml .
+COPY backend/src backend/src
 RUN mvn -q -B -DskipTests package
 
 FROM eclipse-temurin:17-jre-jammy
