@@ -4,6 +4,17 @@
 
 Railway’s proxy is up, but **nothing is answering on the service PORT** (app crashed, still starting, or listening on wrong port).
 
+### Your HTTP logs: `connection refused`
+
+When **Deploy logs** show `Started ResumeTailorApplication` and **Tomcat started on port(s): 8080**, but **HTTP Logs** show `upstreamErrors[].error: connection refused`, the edge is dialing a **different port** than Tomcat (e.g. Networking shows **8989**, app listens on **8080**).
+
+**Fix (pick one after redeploy with `docker-entrypoint.sh`):**
+
+1. **Variables → Raw Editor:** set `PORT` to the same number as **Settings → Networking → Port** (e.g. `PORT=8989`), redeploy.
+2. Or change **Networking** target port to match what Tomcat logs (8080) — prefer (1) so you follow Railway’s assigned `PORT`.
+
+Do **not** bake `ENV PORT=8080` in the Dockerfile; it can fight Railway’s runtime port.
+
 ---
 
 ## Step 1 — Check deployment status

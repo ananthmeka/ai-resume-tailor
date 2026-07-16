@@ -8,6 +8,15 @@ spring:
 
 app:
   cors-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
+  features:
+    # Free Groq tier: 12k TPM — 3 LLM calls per tailor often exceeds quota; enable after upgrade or set true for one-off.
+    interview-questions: ${GENERATE_INTERVIEW_QUESTIONS:false}
+  llm-limits:
+    max-resume-chars: ${LLM_MAX_RESUME_CHARS:9000}
+    max-jd-chars: ${LLM_MAX_JD_CHARS:3500}
+    max-structured-json-chars: ${LLM_MAX_STRUCTURED_JSON_CHARS:7000}
+    max-resume-chars-fallback: ${LLM_MAX_RESUME_CHARS_FALLBACK:5500}
+    prefer-fallback-over-chars: ${LLM_PREFER_FALLBACK_OVER_CHARS:7500}
   openai:
     api-key: ${GROQ_API_KEY:${OPENAI_API_KEY:}}
     base-url: ${OPENAI_BASE_URL:https://api.groq.com/openai/v1}
@@ -15,3 +24,4 @@ app:
     require-api-key: true
     json-response-format: true
     timeout-seconds: 120
+    max-completion-tokens: ${OPENAI_MAX_COMPLETION_TOKENS:4096}

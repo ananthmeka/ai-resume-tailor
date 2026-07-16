@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Blocks commits that include secret env files or common key patterns in staged content.
+set -euo pipefail
+
+FORBIDDEN_PATHS='^\.env$|^\.env\.|^frontend/\.env|^frontend/\.env\.|\.env\.example$|frontend/\.env\.example$'
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM || true)
+
+if [[ -z "$STAGED" ]]; then
+  exit 0
+fi
+
+BLOCKED=""
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  if echo "$f" | grep -Eq "$FORBIDDEN_PATHS"; then
+    BLOCKED="${BLOCKED}  - ${f}\n"
+  fi
+done <<< "$STAGED"
+
+if [[ -n "$BLOCKED" ]]; then
+  echo "ERROR: Refusing to commit forbidden env files:"
+  echo -e "$BLOCKED"
+  echo "Use docs/ENV-TEMPLATE.md locally. Secrets go in Railway/Vercel only."
+  echo "See docs/SECRETS-POLICY.md"
+  exit 1
+fi
+
+# Optional: block staged lines that look like live Groq keys (gsk_...)
+if git diff --cached -G 'gsk_[a-zA-Z0-9]{20,}' --name-only | grep -q .; then
+  echo "ERROR: Staged changes appear to contain a Groq API key (gsk_...)."
+  echo "Remove the key from source files before committing."
+  exit 1
+fi
+
+exit 0

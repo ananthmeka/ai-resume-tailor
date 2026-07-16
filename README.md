@@ -2,7 +2,9 @@
 
 One master resume + job description → job-specific, ATS-friendly resume (no invented facts).
 
-**Secrets:** Never commit `.env` files. Copy templates from [docs/ENV-TEMPLATE.md](docs/ENV-TEMPLATE.md). See [docs/SECRETS-POLICY.md](docs/SECRETS-POLICY.md).
+**Secrets:** Never commit `.env` files. Copy templates from [docs/ENV-TEMPLATE.md](docs/ENV-TEMPLATE.md). Full setup: **[docs/SETUP-KEYS-RAILWAY-VERCEL.md](docs/SETUP-KEYS-RAILWAY-VERCEL.md)**. See [docs/SECRETS-POLICY.md](docs/SECRETS-POLICY.md).
+
+Install Git hooks: `./scripts/install-git-hooks.sh`
 
 ## LLM backends
 

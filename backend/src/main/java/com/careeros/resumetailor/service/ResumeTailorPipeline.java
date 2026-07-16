@@ -1,5 +1,6 @@
 package com.careeros.resumetailor.service;
 
+import com.careeros.resumetailor.config.LlmLimits;
 import com.careeros.resumetailor.model.InterviewPrep;
 import com.careeros.resumetailor.model.OptimizationResult;
 import com.careeros.resumetailor.model.StructuredResume;
@@ -64,29 +65,42 @@ public class ResumeTailorPipeline {
               ]
             }
             Rules:
-            - Produce 12 to 18 questions mixing categories.
+            - Produce 10 to 14 questions mixing categories.
             - Ground every question in the job description AND specific facts from the candidate resume (employers, projects, technologies, leadership scope).
             - groundedIn cites the resume anchor (e.g. "Cisco — platform migration" or project name).
             - Do NOT assume skills or employers not on the resume.
-            - Include 3-5 project-deep-dive questions when projects exist.
-            - Include JD-specific technical/domain questions the candidate can answer from their stated experience.
+            - Include 2-4 project-deep-dive questions when projects exist.
             """;
 
     private final OpenAiChatService openAi;
     private final ObjectMapper objectMapper;
+    private final LlmLimits limits;
 
-    public ResumeTailorPipeline(OpenAiChatService openAi, ObjectMapper objectMapper) {
+    public ResumeTailorPipeline(OpenAiChatService openAi, ObjectMapper objectMapper, LlmLimits limits) {
         this.openAi = openAi;
         this.objectMapper = objectMapper;
+        this.limits = limits;
     }
 
     public StructuredResume extractStructured(String resumeText) {
-        try {
-            String json = openAi.chatJson(EXTRACT_SYSTEM, "Resume text:\n\n" + truncate(resumeText, 28000));
-            return objectMapper.readValue(json, StructuredResume.class);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to parse resume structure: " + e.getMessage(), e);
+        int[] sizes = {limits.maxResumeChars(), limits.maxResumeCharsFallback()};
+        IllegalStateException last = null;
+        for (int max : sizes) {
+            try {
+                String body = LlmInputTruncator.truncateResumeText(resumeText, max);
+                int chars = body.length();
+                String json = openAi.chatJson(EXTRACT_SYSTEM, "Resume text:\n\n" + body, chars);
+                return objectMapper.readValue(json, StructuredResume.class);
+            } catch (IllegalStateException e) {
+                last = e;
+                if (!LlmInputTruncator.isTokenLimitError(e)) {
+                    throw wrapExtract(e);
+                }
+            } catch (Exception e) {
+                throw wrapExtract(e);
+            }
         }
+        throw wrapExtract(last != null ? last : new IllegalStateException("extract failed"));
     }
 
     public OptimizationResult optimize(StructuredResume base, String jobDescription, String lengthHint) {
@@ -100,8 +114,11 @@ public class ResumeTailorPipeline {
                     
                     Base structured resume (source of truth):
                     %s
-                    """.formatted(lengthHint, truncate(jobDescription, 12000), truncate(baseJson, 28000));
-            String json = openAi.chatJson(OPTIMIZE_SYSTEM, user);
+                    """.formatted(
+                    lengthHint,
+                    LlmInputTruncator.truncatePlain(jobDescription, limits.maxJdChars()),
+                    LlmInputTruncator.truncatePlain(baseJson, limits.maxStructuredJsonChars()));
+            String json = openAi.chatJson(OPTIMIZE_SYSTEM, user, user.length());
             OptimizationResult raw = objectMapper.readValue(json, OptimizationResult.class);
             StructuredResume merged = ResumeCompletenessMerger.merge(base, raw.optimizedResume());
             return new OptimizationResult(
@@ -112,6 +129,9 @@ public class ResumeTailorPipeline {
                     raw.recommendations(),
                     raw.matchScores());
         } catch (Exception e) {
+            if (LlmInputTruncator.isTokenLimitError(e)) {
+                throw tokenLimitUserError(e);
+            }
             throw new IllegalStateException("Failed to optimize resume: " + e.getMessage(), e);
         }
     }
@@ -125,18 +145,33 @@ public class ResumeTailorPipeline {
                     
                     Candidate tailored resume (source of truth for their background):
                     %s
-                    """.formatted(truncate(jobDescription, 12000), truncate(resumeJson, 28000));
+                    """.formatted(
+                    LlmInputTruncator.truncatePlain(jobDescription, limits.maxJdChars()),
+                    LlmInputTruncator.truncatePlain(resumeJson, limits.maxStructuredJsonChars()));
             String json = openAi.chatJson(INTERVIEW_SYSTEM, user);
             return objectMapper.readValue(json, InterviewPrep.class);
         } catch (Exception e) {
+            if (LlmInputTruncator.isTokenLimitError(e)) {
+                return new InterviewPrep(java.util.List.of());
+            }
             throw new IllegalStateException("Failed to generate interview questions: " + e.getMessage(), e);
         }
     }
 
-    private static String truncate(String s, int max) {
-        if (s == null) {
-            return "";
+    private static IllegalStateException wrapExtract(Exception e) {
+        if (LlmInputTruncator.isTokenLimitError(e)) {
+            return tokenLimitUserError(e);
         }
-        return s.length() <= max ? s : s.substring(0, max) + "\n...[truncated]";
+        return new IllegalStateException("Failed to parse resume structure: " + e.getMessage(), e);
+    }
+
+    private static IllegalStateException tokenLimitUserError(Throwable e) {
+        return new IllegalStateException(
+                "Groq/OpenAI token limit exceeded (free tier ~12k tokens/min). "
+                        + "Use a shorter resume/JD, wait 60 seconds and retry, upload DOCX/TXT, "
+                        + "or set GENERATE_INTERVIEW_QUESTIONS=false and redeploy. "
+                        + "Details: "
+                        + e.getMessage(),
+                e);
     }
 }

@@ -25,10 +25,10 @@ Never commit, push, or include in PRs:
 
 ```bash
 git status
-git ls-files | grep -E '\.env' || true   # should show nothing (or only docs)
+git ls-files --cached | grep -E '^\.env$|^frontend/\.env$' || true
 ```
 
-If `.env` appears staged: `git reset HEAD .env frontend/.env` and fix `.gitignore`.
+Install hooks: `./scripts/install-git-hooks.sh` — see [SETUP-KEYS-RAILWAY-VERCEL.md](SETUP-KEYS-RAILWAY-VERCEL.md).
 
 ## If a secret was pushed
 

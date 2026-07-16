@@ -22,4 +22,20 @@ app:
     require-api-key: true
     json-response-format: true
     timeout-seconds: 120
-    max-completion-tokens: ${OPENAI_MAX_COMPLETION_TOKENS:16384}
+    max-completion-tokens: ${OPENAI_MAX_COMPLETION_TOKENS:8192}
+    fallback:
+      enabled: ${LLM_FALLBACK_ENABLED:false}
+      base-url: ${LLM_FALLBACK_BASE_URL:}
+      api-key: ${LLM_FALLBACK_API_KEY:}
+      model: ${LLM_FALLBACK_MODEL:}
+      max-completion-tokens: ${LLM_FALLBACK_MAX_COMPLETION_TOKENS:8192}
+      json-response-format: ${LLM_FALLBACK_JSON_FORMAT:true}
+      timeout-seconds: ${LLM_FALLBACK_TIMEOUT_SECONDS:180}
+  llm-limits:
+    max-resume-chars: ${LLM_MAX_RESUME_CHARS:12000}
+    max-jd-chars: ${LLM_MAX_JD_CHARS:5000}
+    max-structured-json-chars: ${LLM_MAX_STRUCTURED_JSON_CHARS:9000}
+    max-resume-chars-fallback: ${LLM_MAX_RESUME_CHARS_FALLBACK:7000}
+    prefer-fallback-over-chars: ${LLM_PREFER_FALLBACK_OVER_CHARS:9000}
+  features:
+    interview-questions: ${GENERATE_INTERVIEW_QUESTIONS:true}

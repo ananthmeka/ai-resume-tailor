@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Last line of defense before push: ensure no .env files in commits being pushed.
+set -euo pipefail
+
+ZERO=$(git rev-list -n 1 origin/main 2>/dev/null || echo "")
+if [[ -z "$ZERO" ]]; then
+  # No remote branch yet — scan all commits on current branch
+  RANGE="HEAD"
+else
+  RANGE="${ZERO}..HEAD"
+fi
+
+FORBIDDEN=$(git diff --name-only "$RANGE" 2>/dev/null | grep -E '^\.env$|^\.env\.|^frontend/\.env|^frontend/\.env\.' || true)
+
+if [[ -n "$FORBIDDEN" ]]; then
+  echo "ERROR: Push blocked — these env files exist in commits to be pushed:"
+  echo "$FORBIDDEN"
+  echo "Remove from history or reset commits. See docs/SECRETS-POLICY.md"
+  exit 1
+fi
+
+exit 0
