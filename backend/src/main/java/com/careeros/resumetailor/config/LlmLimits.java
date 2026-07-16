@@ -8,7 +8,8 @@ public record LlmLimits(
         int maxJdChars,
         int maxStructuredJsonChars,
         int maxResumeCharsFallback,
-        int preferFallbackOverChars
+        int preferFallbackOverChars,
+        int pauseMsBetweenLlmCalls
 ) {
     public LlmLimits {
         if (maxResumeCharsFallback <= 0) {

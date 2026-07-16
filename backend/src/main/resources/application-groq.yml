@@ -17,6 +17,7 @@ app:
     max-structured-json-chars: ${LLM_MAX_STRUCTURED_JSON_CHARS:7000}
     max-resume-chars-fallback: ${LLM_MAX_RESUME_CHARS_FALLBACK:5500}
     prefer-fallback-over-chars: ${LLM_PREFER_FALLBACK_OVER_CHARS:7500}
+    pause-ms-between-llm-calls: ${LLM_PAUSE_MS:12000}
   openai:
     api-key: ${GROQ_API_KEY:${OPENAI_API_KEY:}}
     base-url: ${OPENAI_BASE_URL:https://api.groq.com/openai/v1}

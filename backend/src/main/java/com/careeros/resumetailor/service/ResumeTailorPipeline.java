@@ -168,8 +168,8 @@ public class ResumeTailorPipeline {
     private static IllegalStateException tokenLimitUserError(Throwable e) {
         return new IllegalStateException(
                 "Groq/OpenAI token limit exceeded (free tier ~12k tokens/min). "
-                        + "Use a shorter resume/JD, wait 60 seconds and retry, upload DOCX/TXT, "
-                        + "or set GENERATE_INTERVIEW_QUESTIONS=false and redeploy. "
+                        + "The app will retry automatically when possible; wait 60s and try again, "
+                        + "use a shorter JD, or enable OpenRouter fallback (LLM_FALLBACK_*). "
                         + "Details: "
                         + e.getMessage(),
                 e);

@@ -37,5 +37,6 @@ app:
     max-structured-json-chars: ${LLM_MAX_STRUCTURED_JSON_CHARS:9000}
     max-resume-chars-fallback: ${LLM_MAX_RESUME_CHARS_FALLBACK:7000}
     prefer-fallback-over-chars: ${LLM_PREFER_FALLBACK_OVER_CHARS:9000}
+    pause-ms-between-llm-calls: ${LLM_PAUSE_MS:0}
   features:
     interview-questions: ${GENERATE_INTERVIEW_QUESTIONS:true}

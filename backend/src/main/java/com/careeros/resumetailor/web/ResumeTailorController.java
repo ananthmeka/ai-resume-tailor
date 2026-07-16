@@ -1,5 +1,6 @@
 package com.careeros.resumetailor.web;
 
+import com.careeros.resumetailor.config.LlmLimits;
 import com.careeros.resumetailor.model.InterviewPrep;
 import com.careeros.resumetailor.model.TailorRequest;
 import com.careeros.resumetailor.model.TailorResponse;
@@ -25,17 +26,20 @@ public class ResumeTailorController {
     private final ResumeHtmlRenderer htmlRenderer;
     private final PdfExportService pdfExportService;
     private final boolean interviewQuestionsEnabled;
+    private final LlmLimits llmLimits;
 
     public ResumeTailorController(
             ResumeParseService parseService,
             ResumeTailorPipeline pipeline,
             ResumeHtmlRenderer htmlRenderer,
             PdfExportService pdfExportService,
+            LlmLimits llmLimits,
             @Value("${app.features.interview-questions:true}") boolean interviewQuestionsEnabled) {
         this.parseService = parseService;
         this.pipeline = pipeline;
         this.htmlRenderer = htmlRenderer;
         this.pdfExportService = pdfExportService;
+        this.llmLimits = llmLimits;
         this.interviewQuestionsEnabled = interviewQuestionsEnabled;
     }
 
@@ -52,6 +56,7 @@ public class ResumeTailorController {
         TailorRequest req = new TailorRequest(jobDescription, resumeLength);
         String text = parseService.extractText(resume);
         var structured = pipeline.extractStructured(text);
+        pauseBetweenLlmCalls();
         var result = pipeline.optimize(structured, req.jobDescription(), req.resumeLengthOrDefault());
         InterviewPrep interviewPrep = interviewQuestionsEnabled
                 ? pipeline.generateInterviewQuestions(result.optimizedResume(), req.jobDescription())
@@ -72,5 +77,17 @@ public class ResumeTailorController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"tailored-resume.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
+    }
+
+    private void pauseBetweenLlmCalls() {
+        int ms = llmLimits.pauseMsBetweenLlmCalls();
+        if (ms <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

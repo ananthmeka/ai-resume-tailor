@@ -100,8 +100,8 @@ public class OpenAiChatService {
             }
         }
         try {
-            return invoke(primaryClient, primaryApiKey, primaryModel, maxCompletionTokens, jsonResponseFormat, systemPrompt,
-                    userPrompt);
+            return invokeWithRateLimitRetry(primaryClient, primaryApiKey, primaryModel, maxCompletionTokens, jsonResponseFormat,
+                    systemPrompt, userPrompt);
         } catch (IllegalStateException e) {
             if (fallbackEnabled && LlmInputTruncator.isTokenLimitError(e)) {
                 return invoke(fallbackClient, fallbackApiKey, fallbackModel, fallbackMaxCompletionTokens, fallbackJsonFormat,
@@ -109,6 +109,35 @@ public class OpenAiChatService {
             }
             throw e;
         }
+    }
+
+    private String invokeWithRateLimitRetry(
+            RestClient client,
+            String apiKey,
+            String model,
+            int maxTokens,
+            boolean jsonFormat,
+            String systemPrompt,
+            String userPrompt) {
+        IllegalStateException last = null;
+        for (int attempt = 0; attempt < 4; attempt++) {
+            try {
+                return invoke(client, apiKey, model, maxTokens, jsonFormat, systemPrompt, userPrompt);
+            } catch (IllegalStateException e) {
+                last = e;
+                if (!LlmInputTruncator.isTokenLimitError(e) || attempt >= 3) {
+                    throw e;
+                }
+                long wait = LlmInputTruncator.retryDelayMillis(e.getMessage(), 12_000);
+                try {
+                    Thread.sleep(wait);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+        throw last != null ? last : new IllegalStateException("LLM request failed");
     }
 
     private String invoke(

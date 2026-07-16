@@ -45,4 +45,20 @@ public final class LlmInputTruncator {
         }
         return false;
     }
+
+    /** Groq messages include e.g. "try again in 4.545s". */
+    public static long retryDelayMillis(String message, long defaultMs) {
+        if (message == null) {
+            return defaultMs;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("try again in ([0-9.]+)s").matcher(message);
+        if (m.find()) {
+            double seconds = Double.parseDouble(m.group(1));
+            return (long) (seconds * 1000) + 750;
+        }
+        if (message.contains("tokens per minute")) {
+            return Math.max(defaultMs, 15_000);
+        }
+        return defaultMs;
+    }
 }
