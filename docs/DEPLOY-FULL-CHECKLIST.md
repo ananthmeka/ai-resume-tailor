@@ -4,6 +4,29 @@ Use this **complete** list so nothing is skipped. Order matters.
 
 ---
 
+## Your URLs (bookmark these)
+
+| What | URL |
+|------|-----|
+| **GitHub repo** | https://github.com/ananthmeka/ai-resume-tailor |
+| **GitHub commits (`main`)** | https://github.com/ananthmeka/ai-resume-tailor/commits/main |
+| **Railway dashboard** | https://railway.app → project **ai-resume-tailor** → service **ai-resume-tailor** |
+| **Railway public API (backend)** | https://ai-resume-tailor-production-8518.up.railway.app |
+| **Railway health** | https://ai-resume-tailor-production-8518.up.railway.app/api/health |
+| **Vercel dashboard** | https://vercel.com → project **ai-resume-tailor** |
+| **Vercel production UI (use this for tests)** | https://ai-resume-tailor-ecru-tau.vercel.app |
+| **Vercel preview (git branch)** | https://ai-resume-tailor-git-main-ananthmeka.vercel.app |
+
+**API base for Vercel env** (no trailing slash):
+
+`https://ai-resume-tailor-production-8518.up.railway.app`
+
+**CORS:** include both Vercel hostnames in Railway `APP_CORS_ORIGINS` if you use preview + production:
+
+`https://ai-resume-tailor-ecru-tau.vercel.app,https://ai-resume-tailor-git-main-ananthmeka.vercel.app,https://*.vercel.app`
+
+---
+
 ## A. Local — code ready
 
 | # | Action | Check |
@@ -66,7 +89,7 @@ git log -1 --oneline origin/main    # matches your local HEAD SHA
 SPRING_PROFILES_ACTIVE=railway,groq
 GROQ_API_KEY=gsk_...
 APP_API_KEY=<openssl rand -hex 32>
-APP_CORS_ORIGINS=http://localhost:5173,https://ai-resume-tailor-ecru-tau.vercel.app,https://*.vercel.app
+APP_CORS_ORIGINS=http://localhost:5173,https://ai-resume-tailor-ecru-tau.vercel.app,https://ai-resume-tailor-git-main-ananthmeka.vercel.app,https://*.vercel.app
 PORT=8989
 GENERATE_INTERVIEW_QUESTIONS=false
 APP_RATE_LIMIT_PER_MINUTE=30

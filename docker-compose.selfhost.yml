@@ -1,0 +1,17 @@
+# Self-hosted API (open-source stack — no Railway)
+# Usage: from repo root
+#   cp backend/.env.example backend/.env   # edit secrets
+#   docker compose -f docker-compose.selfhost.yml up -d --build
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+    restart: unless-stopped
