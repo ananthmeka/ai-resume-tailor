@@ -115,7 +115,7 @@ export default function App() {
 
         <div className="actions">
           <button type="button" disabled={loading} onClick={() => runTailor(false)}>
-            {loading ? 'Generating resume & interview prep…' : 'Generate tailored resume'}
+            {loading ? 'Generating resume (may take up to ~90s on free Groq)…' : 'Generate tailored resume'}
           </button>
           <button
             type="button"

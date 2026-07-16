@@ -23,6 +23,8 @@ app:
     json-response-format: true
     timeout-seconds: 120
     max-completion-tokens: ${OPENAI_MAX_COMPLETION_TOKENS:8192}
+    extract-model: ${OPENAI_EXTRACT_MODEL:}
+    extract-max-completion-tokens: ${OPENAI_EXTRACT_MAX_COMPLETION_TOKENS:3072}
     fallback:
       enabled: ${LLM_FALLBACK_ENABLED:false}
       base-url: ${LLM_FALLBACK_BASE_URL:}

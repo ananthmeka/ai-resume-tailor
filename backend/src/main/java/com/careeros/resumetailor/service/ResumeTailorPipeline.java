@@ -89,7 +89,7 @@ public class ResumeTailorPipeline {
             try {
                 String body = LlmInputTruncator.truncateResumeText(resumeText, max);
                 int chars = body.length();
-                String json = openAi.chatJson(EXTRACT_SYSTEM, "Resume text:\n\n" + body, chars);
+                String json = openAi.chatJsonForExtract(EXTRACT_SYSTEM, "Resume text:\n\n" + body, chars);
                 return objectMapper.readValue(json, StructuredResume.class);
             } catch (IllegalStateException e) {
                 last = e;
@@ -167,10 +167,9 @@ public class ResumeTailorPipeline {
 
     private static IllegalStateException tokenLimitUserError(Throwable e) {
         return new IllegalStateException(
-                "Groq/OpenAI token limit exceeded (free tier ~12k tokens/min). "
-                        + "The app will retry automatically when possible; wait 60s and try again, "
-                        + "use a shorter JD, or enable OpenRouter fallback (LLM_FALLBACK_*). "
-                        + "Details: "
+                "Groq token limit (12k/min): extract + optimize cannot both run in the same minute on free tier. "
+                        + "The server waits ~65s between steps after deploy; retry once, shorten the JD, "
+                        + "or set OpenRouter fallback (LLM_FALLBACK_*). Details: "
                         + e.getMessage(),
                 e);
     }

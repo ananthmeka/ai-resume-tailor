@@ -21,6 +21,8 @@ public class OpenAiChatService {
     private final ObjectMapper objectMapper;
     private final String primaryApiKey;
     private final String primaryModel;
+    private final String extractModel;
+    private final int extractMaxCompletionTokens;
     private final boolean requireApiKey;
     private final boolean jsonResponseFormat;
     private final int maxCompletionTokens;
@@ -38,6 +40,8 @@ public class OpenAiChatService {
             ObjectMapper objectMapper,
             @Value("${app.openai.api-key}") String apiKey,
             @Value("${app.openai.model}") String model,
+            @Value("${app.openai.extract-model:}") String extractModel,
+            @Value("${app.openai.extract-max-completion-tokens:3072}") int extractMaxCompletionTokens,
             @Value("${app.openai.require-api-key:true}") boolean requireApiKey,
             @Value("${app.openai.json-response-format:true}") boolean jsonResponseFormat,
             @Value("${app.openai.max-completion-tokens:8192}") int maxCompletionTokens,
@@ -53,6 +57,8 @@ public class OpenAiChatService {
         this.objectMapper = objectMapper;
         this.primaryApiKey = apiKey;
         this.primaryModel = model;
+        this.extractModel = extractModel;
+        this.extractMaxCompletionTokens = extractMaxCompletionTokens;
         this.requireApiKey = requireApiKey;
         this.jsonResponseFormat = jsonResponseFormat;
         this.maxCompletionTokens = maxCompletionTokens;
@@ -83,8 +89,22 @@ public class OpenAiChatService {
         return chatJson(systemPrompt, userPrompt, userPrompt != null ? userPrompt.length() : 0);
     }
 
-    /** Large inputs (e.g. two-page resumes) can use fallback provider first when configured. */
+    /** Resume extract step — smaller/faster model on Groq to stay under 12k TPM/min. */
+    public String chatJsonForExtract(String systemPrompt, String userPrompt, int estimatedInputChars) {
+        String model = extractModel != null && !extractModel.isBlank() ? extractModel : primaryModel;
+        return chatJsonWithModel(systemPrompt, userPrompt, estimatedInputChars, model, extractMaxCompletionTokens);
+    }
+
     public String chatJson(String systemPrompt, String userPrompt, int estimatedInputChars) {
+        return chatJsonWithModel(systemPrompt, userPrompt, estimatedInputChars, primaryModel, maxCompletionTokens);
+    }
+
+    private String chatJsonWithModel(
+            String systemPrompt,
+            String userPrompt,
+            int estimatedInputChars,
+            String model,
+            int maxTokens) {
         if (requireApiKey && (primaryApiKey == null || primaryApiKey.isBlank())) {
             throw new IllegalStateException("OPENAI_API_KEY is not configured");
         }
@@ -100,8 +120,8 @@ public class OpenAiChatService {
             }
         }
         try {
-            return invokeWithRateLimitRetry(primaryClient, primaryApiKey, primaryModel, maxCompletionTokens, jsonResponseFormat,
-                    systemPrompt, userPrompt);
+            return invokeWithRateLimitRetry(primaryClient, primaryApiKey, model, maxTokens, jsonResponseFormat, systemPrompt,
+                    userPrompt);
         } catch (IllegalStateException e) {
             if (fallbackEnabled && LlmInputTruncator.isTokenLimitError(e)) {
                 return invoke(fallbackClient, fallbackApiKey, fallbackModel, fallbackMaxCompletionTokens, fallbackJsonFormat,
@@ -128,7 +148,7 @@ public class OpenAiChatService {
                 if (!LlmInputTruncator.isTokenLimitError(e) || attempt >= 3) {
                     throw e;
                 }
-                long wait = LlmInputTruncator.retryDelayMillis(e.getMessage(), 12_000);
+                long wait = LlmInputTruncator.retryDelayMillis(e.getMessage(), 65_000);
                 try {
                     Thread.sleep(wait);
                 } catch (InterruptedException ie) {

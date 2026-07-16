@@ -51,13 +51,27 @@ public final class LlmInputTruncator {
         if (message == null) {
             return defaultMs;
         }
+        java.util.regex.Matcher usedReq = java.util.regex.Pattern
+                .compile("Used ([0-9]+).*Requested ([0-9]+)", java.util.regex.Pattern.DOTALL)
+                .matcher(message);
+        if (usedReq.find()) {
+            long used = Long.parseLong(usedReq.group(1));
+            long requested = Long.parseLong(usedReq.group(2));
+            if (used + requested > 11_500) {
+                return 65_000;
+            }
+        }
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("try again in ([0-9.]+)s").matcher(message);
         if (m.find()) {
             double seconds = Double.parseDouble(m.group(1));
-            return (long) (seconds * 1000) + 750;
+            long shortWait = (long) (seconds * 1000) + 750;
+            if (message.contains("tokens per minute")) {
+                return Math.max(shortWait, 65_000);
+            }
+            return shortWait;
         }
         if (message.contains("tokens per minute")) {
-            return Math.max(defaultMs, 15_000);
+            return Math.max(defaultMs, 65_000);
         }
         return defaultMs;
     }
