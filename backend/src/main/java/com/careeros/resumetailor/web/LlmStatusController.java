@@ -16,6 +16,7 @@ public class LlmStatusController {
             @Value("${app.openai.base-url}") String baseUrl,
             @Value("${app.openai.model}") String model,
             @Value("${app.openai.require-api-key:true}") boolean requireApiKey,
+            @Value("${spring.profiles.active:default}") String profiles,
             @Value("${app.openai.fallback.enabled:false}") boolean fallbackEnabled) {
         return Map.of(
                 "provider", providerLabel(baseUrl),
