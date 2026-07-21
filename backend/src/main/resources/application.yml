@@ -3,6 +3,14 @@ server:
   address: 0.0.0.0
 
 spring:
+  datasource:
+    url: ${APP_DATABASE_URL:jdbc:h2:file:./data/resume-tailor}
+    username: ${APP_DATABASE_USER:sa}
+    password: ${APP_DATABASE_PASSWORD:}
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
   servlet:
     multipart:
       max-file-size: 10MB
@@ -13,8 +21,11 @@ app:
   security:
     api-key-enabled: ${APP_API_KEY_ENABLED:false}
     api-key: ${APP_API_KEY:}
+    beta-access-enabled: ${APP_BETA_ACCESS_ENABLED:false}
+    beta-users: ${APP_BETA_USERS:}
     rate-limit-per-minute: ${APP_RATE_LIMIT_PER_MINUTE:30}
     tailor-rate-limit-per-hour: ${APP_TAILOR_LIMIT_PER_HOUR:10}
+    tailor-rate-limit-per-month: ${APP_TAILOR_LIMIT_PER_MONTH:30}
   openai:
     api-key: ${OPENAI_API_KEY:}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

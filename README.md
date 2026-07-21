@@ -2,7 +2,25 @@
 
 One master resume + job description → job-specific, ATS-friendly resume (no invented facts).
 
-**Secrets:** Never commit `.env` files. Copy templates from [docs/ENV-TEMPLATE.md](docs/ENV-TEMPLATE.md). Full setup: **[docs/SETUP-KEYS-RAILWAY-VERCEL.md](docs/SETUP-KEYS-RAILWAY-VERCEL.md)**. See [docs/SECRETS-POLICY.md](docs/SECRETS-POLICY.md).
+**Small public beta:** See [Phase 1 deployment](docs/PHASE-1-PUBLIC-BETA.md) for individual access codes, persistent quotas, open-model inference, and installable mobile PWA support.
+
+## Local standalone (recommended — open source, $0 cloud)
+
+**No Railway, no Vercel, no Groq.** Run UI + API + **Ollama** on your laptop.
+
+| Doc | What |
+|-----|------|
+| **[docs/LOCAL-STANDALONE-OSS.md](docs/LOCAL-STANDALONE-OSS.md)** | Full guide (Docker or native) |
+| Docker | `docker compose -f docker-compose.local.yml up -d --build` → **http://localhost:8081** |
+| Native | `./scripts/start-local-standalone.sh` → **http://localhost:5173** |
+
+**Codex/Cursor cannot replace the LLM** (no HTTP API). Use **Ollama** or **LM Studio** locally.
+
+---
+
+**Cloud beta (optional):** Railway + Groq + Vercel — [docs/SETUP-KEYS-RAILWAY-VERCEL.md](docs/SETUP-KEYS-RAILWAY-VERCEL.md). Groq free tier may truncate 2-page resumes.
+
+**Secrets:** Never commit `.env` files. Copy templates from [docs/ENV-TEMPLATE.md](docs/ENV-TEMPLATE.md). See [docs/SECRETS-POLICY.md](docs/SECRETS-POLICY.md).
 
 Install Git hooks: `./scripts/install-git-hooks.sh`
 
@@ -10,7 +28,8 @@ Install Git hooks: `./scripts/install-git-hooks.sh`
 
 | When | Doc |
 |------|-----|
-| Laptop + Ollama + Vercel | [docs/DEPLOY-LAPTOP-LLM.md](docs/DEPLOY-LAPTOP-LLM.md) |
+| **Local laptop only (OSS)** | **[docs/LOCAL-STANDALONE-OSS.md](docs/LOCAL-STANDALONE-OSS.md)** |
+| Laptop + Ollama + Vercel (tunnel) | [docs/DEPLOY-LAPTOP-LLM.md](docs/DEPLOY-LAPTOP-LLM.md) |
 | **24/7 cloud free/open models** | **[docs/CLOUD-LLM-OPTIONS.md](docs/CLOUD-LLM-OPTIONS.md)** (Groq, OpenRouter, Together) |
 
 Cloud quick start:

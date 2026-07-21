@@ -15,12 +15,25 @@ export function apiUrl(path) {
   return `${getApiBase()}${p}`
 }
 
-/** Public beta key (visible in static JS — use only with rate limits; rotate often). */
+const BETA_TOKEN_KEY = 'resume-tailor-beta-token'
+
+export function getBetaToken() {
+  return window.localStorage.getItem(BETA_TOKEN_KEY) || ''
+}
+
+export function setBetaToken(token) {
+  if (token?.trim()) {
+    window.localStorage.setItem(BETA_TOKEN_KEY, token.trim())
+  } else {
+    window.localStorage.removeItem(BETA_TOKEN_KEY)
+  }
+}
+
 export function apiHeaders(extra = {}) {
   const headers = { ...extra }
-  const key = import.meta.env.VITE_API_KEY?.trim()
-  if (key) {
-    headers['X-API-Key'] = key
+  const token = getBetaToken()
+  if (token) {
+    headers['X-Beta-Token'] = token
   }
   return headers
 }

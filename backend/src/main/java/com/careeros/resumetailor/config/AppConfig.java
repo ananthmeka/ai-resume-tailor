@@ -3,6 +3,8 @@ package com.careeros.resumetailor.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.core.Ordered;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -29,7 +31,8 @@ public class AppConfig {
     }
 
     @Bean
-    CorsFilter corsFilter(@Value("${app.cors-origins}") String corsOrigins) {
+    FilterRegistrationBean<CorsFilter> corsFilterRegistration(
+            @Value("${app.cors-origins}") String corsOrigins) {
         List<String> origins = Arrays.stream(corsOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -46,6 +49,9 @@ public class AppConfig {
         config.addAllowedMethod("*");
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
+        FilterRegistrationBean<CorsFilter> registration =
+                new FilterRegistrationBean<>(new CorsFilter(source));
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
     }
 }

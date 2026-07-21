@@ -8,6 +8,9 @@ frontend/.env.example
 
 node_modules/
 target/
+backend/data/
 dist/
 .idea/
 *.iml
+.vercel
+.env*

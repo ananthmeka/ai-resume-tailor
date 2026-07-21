@@ -16,16 +16,16 @@
   <p class="muted">Last updated: July 2026. Draft for MVP / beta.</p>
 
   <h2>What we collect</h2>
-  <p>When you use AI Resume Tailor, you may upload a resume and paste a job description. These are sent to our API to generate tailored output. We do not require an account in the current version.</p>
+  <p>When you use AI Resume Tailor, you may upload a resume and paste a job description. These are sent to our API to generate tailored output. The small beta uses an access code to enforce individual usage limits.</p>
 
   <h2>How we use data</h2>
   <p>Data is used only to parse, analyze, and generate resume content for your request. We do not sell personal data.</p>
 
   <h2>Storage</h2>
-  <p>The MVP may process data in memory without long-term storage. If logging is enabled on the server, technical logs may exist for a limited time. Production deployments should state retention clearly.</p>
+  <p>Resume content and generated output are processed for the active request and are not intentionally persisted by the application. The service stores only a beta-user identifier, quota counters, and timestamps. Infrastructure and AI-provider technical logs may exist for a limited time.</p>
 
   <h2>Third parties</h2>
-  <p>Processing may use an AI provider (e.g. OpenAI) or a self-hosted model (e.g. Ollama on the operator’s infrastructure). Resume files are not sent to job boards by this application.</p>
+  <p>Processing may use an open-weight model through a configured inference provider or a self-hosted model such as Ollama/vLLM. Resume files are not sent to job boards by this application.</p>
 
   <h2>Your choices</h2>
   <p>Do not upload information you are not comfortable sharing with the service operator. You may stop using the service at any time.</p>

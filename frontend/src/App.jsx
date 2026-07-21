@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { apiFetch } from './api.js'
+import { useEffect, useState } from 'react'
+import { apiFetch, getBetaToken, setBetaToken } from './api.js'
 
 const LENGTH_OPTIONS = [
   { value: 'ONE_PAGE', label: 'One page' },
@@ -14,8 +14,66 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+  const [account, setAccount] = useState(null)
+  const [accessCode, setAccessCode] = useState(getBetaToken())
+  const [accessRequired, setAccessRequired] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState(null)
 
-  async function runTailor(downloadPdf) {
+  async function loadAccount() {
+    const res = await apiFetch('/api/account')
+    if (res.status === 401) {
+      setAccessRequired(true)
+      setAccount(null)
+      return false
+    }
+    if (!res.ok) {
+      throw new Error(`Unable to contact the API (${res.status})`)
+    }
+    setAccount(await res.json())
+    setAccessRequired(false)
+    return true
+  }
+
+  useEffect(() => {
+    loadAccount().catch((e) => setError(e.message))
+    const captureInstall = (event) => {
+      event.preventDefault()
+      setInstallPrompt(event)
+    }
+    window.addEventListener('beforeinstallprompt', captureInstall)
+    return () => window.removeEventListener('beforeinstallprompt', captureInstall)
+  }, [])
+
+  async function installApp() {
+    if (!installPrompt) return
+    await installPrompt.prompt()
+    setInstallPrompt(null)
+  }
+
+  async function unlockBeta(event) {
+    event.preventDefault()
+    setError('')
+    setBetaToken(accessCode)
+    try {
+      const valid = await loadAccount()
+      if (!valid) {
+        setBetaToken('')
+        setError('That beta access code is not valid.')
+      }
+    } catch (e) {
+      setError(e.message || 'Unable to validate the access code')
+    }
+  }
+
+  function signOut() {
+    setBetaToken('')
+    setAccessCode('')
+    setAccount(null)
+    setAccessRequired(true)
+    setResult(null)
+  }
+
+  async function runTailor() {
     setError('')
     if (!file) {
       setError('Please upload your base resume (PDF or DOCX).')
@@ -31,26 +89,41 @@ export default function App() {
       form.append('resume', file)
       form.append('jobDescription', jobDescription.trim())
       form.append('resumeLength', resumeLength)
-      const path = downloadPdf ? '/api/tailor/pdf' : '/api/tailor'
-      const res = await apiFetch(path, { method: 'POST', body: form })
+      const res = await apiFetch('/api/tailor', { method: 'POST', body: form })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || `Request failed (${res.status})`)
       }
-      if (downloadPdf) {
-        const blob = await res.blob()
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'tailored-resume.pdf'
-        a.click()
-        URL.revokeObjectURL(url)
-      } else {
-        const data = await res.json()
-        setResult(data)
-      }
+      const data = await res.json()
+      setResult(data)
+      loadAccount().catch(() => {})
     } catch (e) {
       setError(e.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function downloadPdf() {
+    if (!result?.resultId) return
+    setError('')
+    setLoading(true)
+    try {
+      const res = await apiFetch(`/api/results/${result.resultId}/pdf`)
+      if (!res.ok) {
+        throw new Error(res.status === 404
+          ? 'This download expired. Generate the resume again to create a fresh PDF.'
+          : `PDF download failed (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'tailored-resume.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(e.message || 'PDF download failed')
     } finally {
       setLoading(false)
     }
@@ -74,9 +147,41 @@ export default function App() {
             <> · Dev mode (local API)</>
           )}
         </p>
+        {account && (
+          <div className="account-bar">
+            <span>
+              Signed in as <strong>{account.user}</strong> · {account.monthlyRemaining} generations remaining this month
+            </span>
+            {account.authenticationRequired && <button className="link-button" onClick={signOut}>Sign out</button>}
+          </div>
+        )}
+        {installPrompt && (
+          <button className="install-button" type="button" onClick={installApp}>Install on this device</button>
+        )}
       </header>
 
-      <section className="card">
+      {accessRequired && (
+        <section className="card access-card">
+          <h2>Small public beta</h2>
+          <p>Enter the private access code issued to you. Your code is stored only in this browser.</p>
+          <form onSubmit={unlockBeta}>
+            <label htmlFor="accessCode">Beta access code</label>
+            <div className="access-row">
+              <input
+                id="accessCode"
+                type="password"
+                value={accessCode}
+                autoComplete="current-password"
+                onChange={(e) => setAccessCode(e.target.value)}
+              />
+              <button type="submit" disabled={!accessCode.trim()}>Continue</button>
+            </div>
+          </form>
+          {error && <p className="error">{error}</p>}
+        </section>
+      )}
+
+      {!accessRequired && <section className="card">
         <label htmlFor="resume">Base resume (PDF, DOCX, TXT)</label>
         <input
           id="resume"
@@ -114,22 +219,22 @@ export default function App() {
         </div>
 
         <div className="actions">
-          <button type="button" disabled={loading} onClick={() => runTailor(false)}>
+          <button type="button" disabled={loading} onClick={runTailor}>
             {loading ? 'Generating resume (may take up to ~90s on free Groq)…' : 'Generate tailored resume'}
           </button>
           <button
             type="button"
             className="secondary"
-            disabled={loading}
-            onClick={() => runTailor(true)}
+            disabled={loading || !result?.resultId}
+            onClick={downloadPdf}
           >
-            Download PDF
+            Download generated PDF (no extra AI usage)
           </button>
         </div>
         {error && <p className="error">{error}</p>}
-      </section>
+      </section>}
 
-      {result && (
+      {!accessRequired && result && (
         <>
           <section className="card analysis">
             <h3>{result.analysis?.targetRoleSummary || 'Tailored for your target role'}</h3>

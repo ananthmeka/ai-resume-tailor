@@ -1,0 +1,52 @@
+# Local-first standalone stack (no Railway, no Vercel, no Groq required).
+# Usage:
+#   docker compose -f docker-compose.local.yml up -d --build
+#   docker compose -f docker-compose.local.yml exec ollama ollama pull qwen2.5:14b
+#   open http://localhost:8081
+#
+# See docs/LOCAL-STANDALONE-OSS.md
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8080"
+      SPRING_PROFILES_ACTIVE: ollama
+      OPENAI_BASE_URL: http://ollama:11434/v1
+      OPENAI_MODEL: ${OPENAI_MODEL:-qwen2.5:14b}
+      OPENAI_API_KEY: ollama
+      APP_API_KEY_ENABLED: "false"
+      APP_DATABASE_URL: jdbc:h2:file:/app/data/resume-tailor
+      APP_CORS_ORIGINS: http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173
+      GENERATE_INTERVIEW_QUESTIONS: "false"
+      OPENAI_MAX_COMPLETION_TOKENS: "8192"
+      JAVA_TOOL_OPTIONS: "-Xmx768m -XX:+UseContainerSupport"
+    depends_on:
+      - ollama
+    volumes:
+      - beta_usage_data:/app/data
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.standalone-ui
+    ports:
+      - "8081:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  beta_usage_data:

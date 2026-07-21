@@ -15,16 +15,19 @@ import java.io.IOException;
 import java.util.Map;
 
 @Component
-@Order(1)
+@Order(2)
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final SecurityProperties security;
     private final InMemoryRateLimiter limiter;
+    private final PersistentQuotaStore quotaStore;
     private final ObjectMapper objectMapper;
 
-    public RateLimitFilter(SecurityProperties security, InMemoryRateLimiter limiter, ObjectMapper objectMapper) {
+    public RateLimitFilter(SecurityProperties security, InMemoryRateLimiter limiter,
+                           PersistentQuotaStore quotaStore, ObjectMapper objectMapper) {
         this.security = security;
         this.limiter = limiter;
+        this.quotaStore = quotaStore;
         this.objectMapper = objectMapper;
     }
 
@@ -46,11 +49,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         boolean tailor = path != null && (path.startsWith("/api/tailor"));
         if (tailor) {
-            String key = "tailor:" + ip;
-            if (!limiter.tryConsume(key, security.tailorRateLimitPerHour(), 3_600_000L)) {
-                writeError(response, 429,
-                        "Tailor limit reached. Try again later.");
-                return;
+            Object authenticated = request.getAttribute("authenticatedUser");
+            if (authenticated != null) {
+                var result = quotaStore.consumeTailor(authenticated.toString(),
+                        security.tailorRateLimitPerHour(), security.tailorRateLimitPerMonth());
+                response.setHeader("X-Quota-Hour-Remaining", Integer.toString(result.hourlyRemaining()));
+                response.setHeader("X-Quota-Month-Remaining", Integer.toString(result.monthlyRemaining()));
+                if (!result.allowed()) {
+                    writeError(response, 429, "Your beta resume-generation quota has been reached.");
+                    return;
+                }
+            } else {
+                String key = "tailor:" + ip;
+                if (!limiter.tryConsume(key, security.tailorRateLimitPerHour(), 3_600_000L)) {
+                    writeError(response, 429, "Tailor limit reached. Try again later.");
+                    return;
+                }
             }
         }
 

@@ -15,20 +15,22 @@ import java.io.IOException;
 import java.util.Map;
 
 @Component
-@Order(2)
+@Order(1)
 public class ApiKeyFilter extends OncePerRequestFilter {
 
     private final SecurityProperties security;
+    private final BetaUserRegistry betaUsers;
     private final ObjectMapper objectMapper;
 
-    public ApiKeyFilter(SecurityProperties security, ObjectMapper objectMapper) {
+    public ApiKeyFilter(SecurityProperties security, BetaUserRegistry betaUsers, ObjectMapper objectMapper) {
         this.security = security;
+        this.betaUsers = betaUsers;
         this.objectMapper = objectMapper;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        if (!security.isApiKeyRequired()) {
+        if (!security.isAuthenticationRequired()) {
             return true;
         }
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
@@ -42,13 +44,31 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        String betaUser = authenticateBetaUser(request);
+        if (betaUser != null) {
+            request.setAttribute("authenticatedUser", betaUser);
+            filterChain.doFilter(request, response);
+            return;
+        }
         if (matchesApiKey(request)) {
+            request.setAttribute("authenticatedUser", "legacy-api-key");
             filterChain.doFilter(request, response);
             return;
         }
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(), Map.of("error", "Invalid or missing API key"));
+        objectMapper.writeValue(response.getOutputStream(), Map.of("error", "Invalid or missing beta access code"));
+    }
+
+    private String authenticateBetaUser(HttpServletRequest request) {
+        String token = request.getHeader("X-Beta-Token");
+        if (token == null || token.isBlank()) {
+            String auth = request.getHeader("Authorization");
+            if (auth != null && auth.startsWith("Bearer ")) {
+                token = auth.substring(7).trim();
+            }
+        }
+        return betaUsers.authenticate(token).orElse(null);
     }
 
     private boolean matchesApiKey(HttpServletRequest request) {
@@ -58,9 +78,6 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             return true;
         }
         String auth = request.getHeader("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            return constantTimeEquals(auth.substring(7).trim(), expected);
-        }
         return false;
     }
 
